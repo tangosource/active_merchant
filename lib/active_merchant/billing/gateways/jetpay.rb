@@ -170,7 +170,12 @@ module ActiveMerchant #:nodoc:
 
       def void(reference, options = {})
         transaction_id, approval, amount, token = reference.split(";")
-        commit(amount.to_i, build_void_request(amount.to_i, transaction_id, approval, token, options))
+        if (options[:reverseauth] == true)
+          request = build_reverseauth_request(amount.to_i, transaction_id, approval, options)
+        else
+          request = build_void_request(amount.to_i, transaction_id, approval, token, options)
+        end
+        commit(amount.to_i, request)
       end
 
       def credit(money, transaction_id_or_card, options = {})
@@ -260,6 +265,16 @@ module ActiveMerchant #:nodoc:
           xml.tag! 'Approval', approval
           xml.tag! 'TotalAmount', amount(money)
           xml.tag! 'Token', token if token
+          xml.target!
+        end
+      end
+
+      def build_reverseauth_request(money, transaction_id, approval, options)
+        build_xml_request('REVERSEAUTH', options, transaction_id) do |xml|
+          add_credit_card(xml, options[:credit_card])
+          xml.tag! 'Approval', approval
+          xml.tag! 'TotalAmount', amount(money)
+
           xml.target!
         end
       end
