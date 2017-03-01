@@ -69,6 +69,8 @@ class JetpayTest < Test::Unit::TestCase
     assert response = @gateway.void('010327153x17T10418;502F7B;500')
     assert_success response
 
+    assert response = @gateway.void('010327153017T10018;502F6B;100', {reverseauth: true, credit_card: credit_card('4242424242424242')})
+
     assert_equal('010327153x17T10418;502F7B;500;', response.authorization)
     assert_equal('502F7B', response.params["approval"])
     assert response.test?
