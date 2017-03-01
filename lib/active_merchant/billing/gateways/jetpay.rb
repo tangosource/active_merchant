@@ -24,7 +24,7 @@ module ActiveMerchant #:nodoc:
       # all transactions are in cents
       self.money_format = :cents
 
-      def self.logger
+      def logger
         @logger ||= Logger.new(STDOUT)
       end
 
@@ -255,7 +255,7 @@ module ActiveMerchant #:nodoc:
           add_user_defined_fields(xml, options)
           xml.tag! 'TotalAmount', amount(money)
 
-          @logger.info(xml)
+          logger.info(xml)
 
           xml.target!
         end
