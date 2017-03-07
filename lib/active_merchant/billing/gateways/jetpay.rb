@@ -1,3 +1,5 @@
+require 'logger'
+
 module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
     class JetpayGateway < Gateway
@@ -21,6 +23,10 @@ module ActiveMerchant #:nodoc:
 
       # all transactions are in cents
       self.money_format = :cents
+
+      def logger
+        @logger ||= Logger.new(STDOUT)
+      end
 
       ACTION_CODE_MESSAGES = {
         "000" =>  "Approved.",
@@ -169,8 +175,13 @@ module ActiveMerchant #:nodoc:
       end
 
       def void(reference, options = {})
-        transaction_id, approval, amount, token = reference.split(";")
-        commit(amount.to_i, build_void_request(amount.to_i, transaction_id, approval, token, options))
+        transaction_id, approval, amount = reference.split(";")
+        if (options[:reverseauth] == true)
+          request = build_reverseauth_request(amount.to_i, transaction_id, approval, options[:credit_card]) 
+        else
+          request = build_void_request(amount.to_i, transaction_id, approval)
+        end
+        commit(amount.to_i, request)
       end
 
       def credit(money, transaction_id_or_card, options = {})
@@ -244,6 +255,8 @@ module ActiveMerchant #:nodoc:
           add_user_defined_fields(xml, options)
           xml.tag! 'TotalAmount', amount(money)
 
+          logger.info(xml)
+
           xml.target!
         end
       end
@@ -260,6 +273,16 @@ module ActiveMerchant #:nodoc:
           xml.tag! 'Approval', approval
           xml.tag! 'TotalAmount', amount(money)
           xml.tag! 'Token', token if token
+          xml.target!
+        end
+      end
+
+      def build_reverseauth_request(money, transaction_id, approval, card)
+        build_xml_request('REVERSEAUTH', transaction_id) do |xml|
+          add_credit_card(xml, card)
+          xml.tag! 'Approval', approval
+          xml.tag! 'TotalAmount', amount(money)
+
           xml.target!
         end
       end
