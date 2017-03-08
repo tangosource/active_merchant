@@ -1,4 +1,5 @@
 require 'logger'
+require 'pry'
 
 module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
@@ -175,11 +176,11 @@ module ActiveMerchant #:nodoc:
       end
 
       def void(reference, options = {})
-        transaction_id, approval, amount = reference.split(";")
+        transaction_id, approval, amount, token = reference.split(";")
         if (options[:reverseauth] == true)
-          request = build_reverseauth_request(amount.to_i, transaction_id, approval, options[:credit_card]) 
+          request = build_reverseauth_request(amount.to_i, transaction_id, approval, options)
         else
-          request = build_void_request(amount.to_i, transaction_id, approval)
+          request = build_void_request(amount.to_i, transaction_id, approval, token, options)
         end
         commit(amount.to_i, request)
       end
@@ -255,7 +256,7 @@ module ActiveMerchant #:nodoc:
           add_user_defined_fields(xml, options)
           xml.tag! 'TotalAmount', amount(money)
 
-          logger.info(xml)
+          logger.debug(xml.target!)
 
           xml.target!
         end
@@ -277,9 +278,9 @@ module ActiveMerchant #:nodoc:
         end
       end
 
-      def build_reverseauth_request(money, transaction_id, approval, card)
-        build_xml_request('REVERSEAUTH', transaction_id) do |xml|
-          add_credit_card(xml, card)
+      def build_reverseauth_request(money, transaction_id, approval, options)
+        build_xml_request('REVERSEAUTH', options, transaction_id) do |xml|
+          add_credit_card(xml, options[:credit_card])
           xml.tag! 'Approval', approval
           xml.tag! 'TotalAmount', amount(money)
 
