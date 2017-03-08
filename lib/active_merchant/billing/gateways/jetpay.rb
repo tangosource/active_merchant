@@ -255,6 +255,7 @@ module ActiveMerchant #:nodoc:
 
       def build_void_request(money, transaction_id, approval, token, options)
         build_xml_request('REVERSEAUTH', options, transaction_id) do |xml|
+          add_credit_card(xml, options[:credit_card]) if options[:credit_card]
           xml.tag! 'Approval', approval
           xml.tag! 'TotalAmount', amount(money)
           xml.tag! 'Token', token if token
